@@ -281,7 +281,9 @@ PT_THREAD( lepton_task(struct pt *pt))
 			completed_buffer = current_buffer;
 			completed_frame_count = current_frame_count;
 
-			HAL_GPIO_TogglePin(SYSTEM_LED_GPIO_Port, SYSTEM_LED_Pin);
+			// turn off blinking led while capture
+			HAL_GPIO_WritePin(SYSTEM_LED_GPIO_Port,SYSTEM_LED_Pin,GPIO_PIN_SET);
+			//HAL_GPIO_TogglePin(SYSTEM_LED_GPIO_Port, SYSTEM_LED_Pin);
 
 			if (!g_format_y16)
 			{
