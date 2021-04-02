@@ -1,6 +1,7 @@
 #ifndef _PROJECT_CONFIG_H_
 #define _PROJECT_CONFIG_H_
 
+// #define USART_DEBUG
 // #define THERMAL_DATA_UART
 // #define TMP007
 // #define TMP007_OVERLAY

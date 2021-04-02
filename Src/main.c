@@ -30,6 +30,7 @@
   *
   ******************************************************************************
   */
+// -specs=nosys.specs -specs=nano.specs -specs=rdimon.specs -lrdimon add to linker flags for semihosting
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 #include "usb_device.h"
@@ -43,6 +44,8 @@
 #include "tmp007_i2c.h"
 #include "usbd_uvc.h"
 #include "usbd_uvc_if.h"
+#include <stdio.h>
+#include "retarget.h"
 DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 
 #include "tasks.h"
@@ -127,6 +130,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   board_detect();
+  char buf[100];
 
   /* USER CODE END 1 */
 
@@ -154,6 +158,7 @@ int main(void)
 #if defined(GDB_SEMIHOSTING)
   initialise_monitor_handles();
 #endif
+  RetargetInit(&huart2);
 
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
   
@@ -534,9 +539,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LEPTON_GPIO3_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ESP_GPIO2_Pin ESP_GPIO0_Pin ESP_CH_PD_Pin SYSTEM_LED_Pin 
+  /*Configure GPIO pins : ESP_GPIO2_Pin ESP_GPIO0_Pin ESP_CH_PD_Pin SYSTEM_LED_Pin
                            ESP_RST_Pin LEPTON_PW_DWN_L_Pin LEPTON_RESET_L_Pin */
-  GPIO_InitStruct.Pin = ESP_GPIO2_Pin|ESP_GPIO0_Pin|ESP_CH_PD_Pin|SYSTEM_LED_Pin 
+  GPIO_InitStruct.Pin = ESP_GPIO2_Pin|ESP_GPIO0_Pin|ESP_CH_PD_Pin|SYSTEM_LED_Pin
                           |ESP_RST_Pin|LEPTON_PW_DWN_L_Pin|LEPTON_RESET_L_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -560,7 +565,7 @@ static void MX_GPIO_Init(void)
 
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, ESP_GPIO2_Pin|ESP_GPIO0_Pin|ESP_CH_PD_Pin|SYSTEM_LED_Pin 
+  HAL_GPIO_WritePin(GPIOA, ESP_GPIO2_Pin|ESP_GPIO0_Pin|ESP_CH_PD_Pin|SYSTEM_LED_Pin
                           |ESP_RST_Pin|LEPTON_PW_DWN_L_Pin|LEPTON_RESET_L_Pin, GPIO_PIN_RESET);
 
   /* EXTI interrupt init*/
