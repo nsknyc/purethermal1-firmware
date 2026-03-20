@@ -632,6 +632,12 @@ static uint8_t  USBD_UVC_EP0_RxReady (USBD_HandleTypeDef *pdev)
       {
         ret = USBD_FAIL;
       }
+      else
+      {
+        /* Return USBD_BUSY so the USB core does NOT send status immediately.
+         * The I2C task will send status after the Lepton command completes. */
+        ret = USBD_BUSY;
+      }
       hcdc->CmdOpCode = 0xFF;
       return ret;
     }

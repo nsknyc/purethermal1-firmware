@@ -51,7 +51,7 @@ HAL_StatusTypeDef enqueue_attribute_xfer_task(struct uvc_request req)
     uint8_t* buffer = uvc_request_buffers[reqnum];
 
     /* for set transfers, make a copy of the data so it's not overwritten by another incoming request */
-    if (req.type == UVC_REQUEST_TYPE_ATTR_SET)
+    if (req.type == UVC_REQUEST_TYPE_ATTR_SET || req.type == UVC_REQUEST_TYPE_VENDOR_SET)
     {
       memcpy(buffer, req.buffer, req.length);
     }
@@ -529,7 +529,11 @@ PT_THREAD( lepton_attribute_xfer_task(struct pt *pt))
   {
     PT_WAIT_UNTIL(pt, dequeue_attribute_xfer_task(&req) == HAL_OK);
 
-    if (req.length < 1 || req.length > MAX_I2C_BUFFER_SIZE)
+    if (req.type == UVC_REQUEST_TYPE_VENDOR_RUN)
+    {
+      /* RUN has no data phase (wLength==0), skip length check */
+    }
+    else if (req.length < 1 || req.length > MAX_I2C_BUFFER_SIZE)
       continue;
 
 	if (req.entity_id == VC_CONTROL_XU_LEP_CUST_ID) {
@@ -643,7 +647,9 @@ PT_THREAD( lepton_attribute_xfer_task(struct pt *pt))
         req.type == UVC_REQUEST_TYPE_VENDOR_SET ||
         req.type == UVC_REQUEST_TYPE_VENDOR_RUN)
     {
-      LEP_COMMAND_ID cmd_id = (LEP_COMMAND_ID)req.control_id;
+      /* cmd_id MUST be static — protothreads don't preserve locals across yields */
+      static LEP_COMMAND_ID cmd_id;
+      cmd_id = (LEP_COMMAND_ID)req.control_id;
 
       if (req.type == UVC_REQUEST_TYPE_VENDOR_GET)
       {
@@ -683,17 +689,16 @@ PT_THREAD( lepton_attribute_xfer_task(struct pt *pt))
       }
       else /* UVC_REQUEST_TYPE_VENDOR_RUN */
       {
+        /* Note: USB status (ZLP) was already sent by USBD_StdItfReq for
+         * wLength==0 requests, so we must NOT touch EP0 here. Just execute
+         * the Lepton command and log any failure. */
         PT_INIT(&lep_pt);
         PT_WAIT_THREAD(pt, LEP_I2C_RunCommand_PT(&lep_pt, &hport_desc,
                                                  cmd_id | LEP_RUN_TYPE,
                                                  &result));
 
-        HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-        if (result == LEP_OK)
-          USBD_CtlSendStatus(hUsbDevice_0);
-        else
-          USBD_CtlError(hUsbDevice_0, 0);
-        HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        if (result != LEP_OK)
+          DEBUG_PRINTF("VENDOR_RUN cmd 0x%04x failed: %d\r\n", cmd_id, result);
       }
       continue;
     }
