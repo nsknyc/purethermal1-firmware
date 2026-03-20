@@ -638,6 +638,66 @@ PT_THREAD( lepton_attribute_xfer_task(struct pt *pt))
 		continue;
 	}
 
+    /* Vendor interface requests: command ID is passed directly, no module_base translation */
+    if (req.type == UVC_REQUEST_TYPE_VENDOR_GET ||
+        req.type == UVC_REQUEST_TYPE_VENDOR_SET ||
+        req.type == UVC_REQUEST_TYPE_VENDOR_RUN)
+    {
+      LEP_COMMAND_ID cmd_id = (LEP_COMMAND_ID)req.control_id;
+
+      if (req.type == UVC_REQUEST_TYPE_VENDOR_GET)
+      {
+        retries = 1;
+        do {
+          PT_INIT(&lep_pt);
+          PT_WAIT_THREAD(pt, LEP_I2C_GetAttribute_PT(&lep_pt, &hport_desc,
+                                                     cmd_id | LEP_GET_TYPE,
+                                                     (LEP_ATTRIBUTE_T_PTR)req.buffer,
+                                                     req.length >> 1,
+                                                     &result));
+          PT_YIELD(pt);
+        } while (result != LEP_OK && retries--);
+
+        HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+        if (result == LEP_OK)
+          USBD_CtlSendData(hUsbDevice_0, req.buffer, req.length);
+        else
+          USBD_CtlError(hUsbDevice_0, 0);
+        HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+      }
+      else if (req.type == UVC_REQUEST_TYPE_VENDOR_SET)
+      {
+        PT_INIT(&lep_pt);
+        PT_WAIT_THREAD(pt, LEP_I2C_SetAttribute_PT(&lep_pt, &hport_desc,
+                                                   cmd_id | LEP_SET_TYPE,
+                                                   (LEP_ATTRIBUTE_T_PTR)req.buffer,
+                                                   req.length >> 1,
+                                                   &result));
+
+        HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+        if (result == LEP_OK)
+          USBD_CtlSendStatus(hUsbDevice_0);
+        else
+          USBD_CtlError(hUsbDevice_0, 0);
+        HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+      }
+      else /* UVC_REQUEST_TYPE_VENDOR_RUN */
+      {
+        PT_INIT(&lep_pt);
+        PT_WAIT_THREAD(pt, LEP_I2C_RunCommand_PT(&lep_pt, &hport_desc,
+                                                 cmd_id | LEP_RUN_TYPE,
+                                                 &result));
+
+        HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+        if (result == LEP_OK)
+          USBD_CtlSendStatus(hUsbDevice_0);
+        else
+          USBD_CtlError(hUsbDevice_0, 0);
+        HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+      }
+      continue;
+    }
+
     module_base = vc_terminal_id_to_module_base(req.entity_id);
 
     if (req.type == UVC_REQUEST_TYPE_ATTR_GET)

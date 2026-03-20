@@ -43,6 +43,9 @@ void rgb2yuv(const rgb_t val, uint8_t *y, uint8_t *u, uint8_t *v);
 typedef enum {
   UVC_REQUEST_TYPE_ATTR_GET,
   UVC_REQUEST_TYPE_ATTR_SET,
+  UVC_REQUEST_TYPE_VENDOR_GET,
+  UVC_REQUEST_TYPE_VENDOR_SET,
+  UVC_REQUEST_TYPE_VENDOR_RUN,
 } uvc_request_type;
 
 struct uvc_request {

@@ -65,6 +65,24 @@
 #include "usbd_types.h"
 #include "uvc_desc.h"
 
+/* Forward declarations for vendor interface support */
+typedef enum {
+  UVC_REQUEST_TYPE_ATTR_GET,
+  UVC_REQUEST_TYPE_ATTR_SET,
+  UVC_REQUEST_TYPE_VENDOR_GET,
+  UVC_REQUEST_TYPE_VENDOR_SET,
+  UVC_REQUEST_TYPE_VENDOR_RUN,
+} uvc_request_type;
+
+struct uvc_request {
+  uvc_request_type type;
+  VC_TERMINAL_ID entity_id;
+  uint16_t control_id;
+  uint16_t length;
+  uint8_t *buffer;
+};
+extern HAL_StatusTypeDef enqueue_attribute_xfer_task(struct uvc_request req);
+
 #if defined(USART_DEBUG) || defined(GDB_SEMIHOSTING)
 #define DEBUG_PRINTF(...) printf( __VA_ARGS__);
 #else
@@ -193,6 +211,7 @@ __ALIGN_BEGIN struct usbd_uvc_cfg USBD_UVC_CfgFSDesc_L2 __ALIGN_END =
   #include "uvc_desc_vc.h"
   #include "uvc_desc_vs_l2.h"
   #include "uvc_desc_vs_if.h"
+  #include "uvc_desc_vendor.h"
 };
 
 __ALIGN_BEGIN struct usbd_uvc_cfg USBD_UVC_CfgFSDesc_L3 __ALIGN_END =
@@ -202,6 +221,7 @@ __ALIGN_BEGIN struct usbd_uvc_cfg USBD_UVC_CfgFSDesc_L3 __ALIGN_END =
   #include "uvc_desc_vc.h"
   #include "uvc_desc_vs_l3.h"
   #include "uvc_desc_vs_if.h"
+  #include "uvc_desc_vendor.h"
 };
 
 /**
@@ -433,7 +453,82 @@ static uint8_t  USBD_UVC_Setup (USBD_HandleTypeDef *pdev,
     }
     break;
  
-  default: 
+  case USB_REQ_TYPE_VENDOR:
+  {
+    uint8_t iface = LOBYTE(req->wIndex);
+    if (iface != USB_UVC_VENDOR_IF_NUM)
+    {
+      USBD_CtlError(pdev, req);
+      return USBD_FAIL;
+    }
+
+    /*
+     * Vendor interface protocol:
+     *   wValue  = Lepton command ID (LEP_COMMAND_ID, 16-bit)
+     *   wIndex  = interface number (low byte = 2)
+     *   wLength = data length in bytes
+     *   Direction bit in bmRequest determines GET vs SET
+     *   SET with wLength==0 is a RUN command
+     */
+
+    if (req->bmRequest & USB_REQ_READ_MASK)
+    {
+      /* GET: host wants to read attribute from Lepton */
+      USBD_LL_FlushEP(pdev, USB_ENDPOINT_OUT(0));
+
+      if (enqueue_attribute_xfer_task((struct uvc_request) {
+            .type = UVC_REQUEST_TYPE_VENDOR_GET,
+            .entity_id = 0,
+            .control_id = req->wValue,
+            .length = req->wLength,
+            .buffer = (uint8_t *)hcdc->data,
+          }) == HAL_OK)
+        ret = USBD_OK;
+      else
+      {
+        USBD_CtlError(pdev, req);
+        ret = USBD_FAIL;
+      }
+    }
+    else
+    {
+      /* SET or RUN */
+      if (req->wLength == 0)
+      {
+        /* RUN command (no data phase) */
+        if (enqueue_attribute_xfer_task((struct uvc_request) {
+              .type = UVC_REQUEST_TYPE_VENDOR_RUN,
+              .entity_id = 0,
+              .control_id = req->wValue,
+              .length = 0,
+              .buffer = NULL,
+            }) == HAL_OK)
+        {
+          ret = USBD_OK;
+        }
+        else
+        {
+          USBD_CtlError(pdev, req);
+          ret = USBD_FAIL;
+        }
+      }
+      else
+      {
+        /* SET: receive data first, then process in EP0_RxReady */
+        hcdc->CmdOpCode = 0xFE; /* sentinel for vendor SET */
+        hcdc->CmdLength = req->wLength;
+        hcdc->CmdIndex = req->wIndex;
+        hcdc->CmdValue = req->wValue;
+
+        USBD_CtlPrepareRx(pdev,
+                           (uint8_t *)hcdc->data,
+                           req->wLength);
+      }
+    }
+  }
+  break;
+
+  default:
     DEBUG_PRINTF("Unknown setup request: %x\r\n", req->bmRequest);
     return USBD_FAIL;
     break;
@@ -524,6 +619,23 @@ static uint8_t  USBD_UVC_EP0_RxReady (USBD_HandleTypeDef *pdev)
   
   if((pdev->pUserData != NULL) && (hcdc->CmdOpCode != 0xFF))
   {
+    /* Vendor SET: data received, enqueue I2C transfer */
+    if (hcdc->CmdOpCode == 0xFE)
+    {
+      if (enqueue_attribute_xfer_task((struct uvc_request) {
+            .type = UVC_REQUEST_TYPE_VENDOR_SET,
+            .entity_id = 0,
+            .control_id = hcdc->CmdValue,
+            .length = hcdc->CmdLength,
+            .buffer = (uint8_t *)hcdc->data,
+          }) != HAL_OK)
+      {
+        ret = USBD_FAIL;
+      }
+      hcdc->CmdOpCode = 0xFF;
+      return ret;
+    }
+
     uint8_t address = (hcdc->CmdIndex >> 0) & 0xff;
     uint8_t entity_id = (hcdc->CmdIndex >> 8) & 0xff;
 

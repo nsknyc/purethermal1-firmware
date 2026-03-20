@@ -142,8 +142,9 @@ enum _vs_frame_indexes {
 #define USB_UVC_VCIF_NUM                              0
 #define USB_UVC_VSIF_ALT_START                        1
 #define USB_UVC_VSIF_ALT_COUNT                        2
+#define USB_UVC_VENDOR_IF_NUM                         2
 
-#define VIDEO_TOTAL_IF_NUM                            (1 + USB_UVC_VSIF_ALT_COUNT)
+#define VIDEO_TOTAL_IF_NUM                            (1 + USB_UVC_VSIF_ALT_COUNT + 1)
 #define WINDOWS_MAX_CONTROLS 31
 
 typedef enum _vs_terminal_id {

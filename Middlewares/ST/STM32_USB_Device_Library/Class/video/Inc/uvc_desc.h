@@ -60,6 +60,8 @@ struct usbd_uvc_cfg {
   struct uvc_vs_frames_formats_descriptor uvc_vs_frames_formats_desc;
 
   struct uvc_vs_alt_setting uvc_vs_alt[USB_UVC_VSIF_ALT_COUNT];
+
+  struct usb_interface_descriptor vendor_if_desc;
 } __attribute__ ((packed));
 
 extern struct usbd_uvc_cfg USBD_UVC_CfgFSDesc_L2;
