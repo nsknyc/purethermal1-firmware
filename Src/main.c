@@ -30,7 +30,8 @@
   *
   ******************************************************************************
   */
-// -specs=nosys.specs -specs=nano.specs -specs=rdimon.specs -lrdimon add to linker flags for semihosting
+// -specs=nosys.specs not needed for retarget using make USART_DEBUG=1
+// -specs=nano.specs -specs=rdimon.specs -lrdimon add to linker flags for semihosting
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 #include "usb_device.h"
@@ -606,13 +607,13 @@ void board_detect()
 
 	/* set the hse value for that board */
 	switch (pt_board) {
-	case PT_BOARD_PT1:
-		pt_hse_value = 14318182U;
-		break;
-	case PT_BOARD_PT2:
-	default:
-		pt_hse_value = 8000000U;
-		break;
+		case PT_BOARD_PT1:
+			pt_hse_value = 14318182U;
+			break;
+		case PT_BOARD_PT2:
+		default:
+			pt_hse_value = 8000000U;
+			break;
 	}
 }
 

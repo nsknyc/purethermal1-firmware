@@ -62,7 +62,7 @@
 #define USBD_MANUFACTURER_STRING     "GroupGets"
 #define USBD_PID_FS     0x0100
 #define USBD_PRODUCT_STRING_FS     "PureThermal"
-#define USBD_SERIALNUMBER_STRING_FS     "v1.0.0"
+#define USBD_SERIALNUMBER_STRING_FS     "v1.3.0"
 #define USBD_CONFIGURATION_STRING_FS     "Video Streaming Configuration"
 #define USBD_INTERFACE_STRING_FS     "Video Streaming Interface"
 
@@ -76,7 +76,7 @@
 #include "version.h"
 #define USBD_SERIALNUMBER_STRING_FS "v" BUILD_GIT_SHA
 #else
-#define USBD_SERIALNUMBER_STRING_FS "v1.0.0"
+#define USBD_SERIALNUMBER_STRING_FS "v1.3.0"
 #endif
 
 /* USER CODE END 0*/

@@ -19,7 +19,7 @@
 
 uint8_t lepton_raw[60*80*2];
 
-extern volatile int restart_frame;
+extern volatile int restart_frame; // @suppress("Unused variable declaration in file scope")
 #if defined(USART_DEBUG) || defined(GDB_SEMIHOSTING)
 #define DEBUG_PRINTF(...) printf( __VA_ARGS__);
 #else

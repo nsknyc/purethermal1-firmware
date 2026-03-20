@@ -40,6 +40,8 @@
 .map
 .settings/
 .mxproject
+.cproject
+.project
 TrueSTUDIO/
 /Debug/
 
