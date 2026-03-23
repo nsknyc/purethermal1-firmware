@@ -1,11 +1,12 @@
 # PureThermal 1/2/Mini Reference Firmware
 
-[![Build Status](https://travis-ci.org/groupgets/purethermal1-firmware.svg?branch=master)](https://travis-ci.org/groupgets/purethermal1-firmware)
-
-The [PureThermal 1](https://groupgets.com/manufacturers/groupgets-labs/products/pure-thermal-1-flir-lepton-dev-kit), [PureThermal 2](https://groupgets.com/manufacturers/getlab/products/purethermal-2-flir-lepton-smart-i-o-module), and [PureThermal Mini](https://store.groupgets.com/products/purethermal-mini-flir-lepton-smart-i-o-module) series of boards are
+The [PureThermal 1](https://groupgets.com/manufacturers/groupgets-labs/products/pure-thermal-1-flir-lepton-dev-kit), [PureThermal 2](https://groupgets.com/manufacturers/getlab/products/purethermal-2-flir-lepton-smart-i-o-module), and [PureThermal Mini](https://store.groupgets.com/products/purethermal-mini-flir-lepton-smart-i-o-module) series of boards
 are an embedded development platform for the FLIR Lepton thermal imager, created by
 GroupGets's [GetLab](https://groupgets.com/manufacturers/getlab). It is based around the STM32F4, a powerful ARM Cortex-M MCU by ST Microelectronics, and its
 various IO capabilities as well as an open source firmware to make it easy integrate a FLIR Lepton into any environment.
+
+
+**Note:** This fork has been tested on macOS. Linux instructions should work as-is. Windows instructions are from the upstream repository and have not been verified — some download links may be outdated. Contributions and corrections are welcome.
 
 
 ## Purpose of This Project
@@ -17,7 +18,7 @@ and use as-is. For others, forking this project and making your own modification
 
 ## Building the Firmware
 
-This is a Makefile-based project, and we use the GCC ARM Embedded toolchain from https://launchpad.net/gcc-arm-embedded/+download,
+This is a Makefile-based project, and we use the [ARM GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads),
 however, other toolchains that work for the STM32 (such as Mentor's Sourcery toolchain) should also work.
 
 
@@ -26,24 +27,19 @@ however, other toolchains that work for the STM32 (such as Mentor's Sourcery too
 The following are compiler installation instructions for various platforms, required for building the firmware.
 
 
-#### Ubuntu 32/64-bit
+#### Ubuntu / Debian
 
-    sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded
     sudo apt-get update
     sudo apt-get install gcc-arm-none-eabi
 
 
-#### OS X
+#### macOS
 
-Launchpad has toolchain binaries for OS X. To keep things simple, we'll install then into `/usr/local/gcc-arm-none-eabi-*`
+Install via Homebrew:
 
-    sudo mkdir -p /usr/local
-    curl -L https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q3-update/+download/gcc-arm-none-eabi-4_9-2015q3-20150921-mac.tar.bz2 -o ~/Downloads/gcc-arm-embedded.tar.bz2
-    sudo tar xjf ~/Downloads/gcc-arm-embedded.tar.bz2 -C /usr/local && rm ~/Downloads/gcc-arm-embedded.tar.bz2
+    brew install --cask gcc-arm-embedded
 
-Then you need to add this location to your path. Add to your .bashrc, or every time you open a new shell and wish to build execute:
-
-    export PATH=$PATH:/usr/local/gcc-arm-none-eabi-4_9-2015q3/bin
+This installs `arm-none-eabi-gcc` and related tools into your PATH automatically.
 
 
 ### Clone and Build
@@ -51,7 +47,7 @@ Then you need to add this location to your path. Add to your .bashrc, or every t
     git clone https://github.com/groupgets/purethermal1-firmware
     cd purethermal1-firmware
 
-If you wish, you can modify `Src/project_config.h` to customize your build. Then you can simply build:
+If you wish, you can modify `Inc/project_config.h` to customize your build. Then you can simply build:
 
     make
 
@@ -65,7 +61,7 @@ alternatively, you can enable semihosting support to printf over JTAG/SWD:
 
 See the "Debugging" section below for more information.
 
-If you have [OpenOCD](http://openocd.org) installed (available in most package management systems), you can then flash
+If you have [OpenOCD](https://openocd.org) installed (available in most package management systems), you can then flash
 the compiled firmware (see next section for required hardware):
 
     make flash
@@ -112,7 +108,7 @@ the compiled firmware (see next section for required hardware):
 
 ### Linux
 
-* See the [texane/stlink github page](https://github.com/texane/stlink) for detailed instructions for various Linux distributions. 
+* See the [stlink-org/stlink github page](https://github.com/stlink-org/stlink) for detailed instructions for various Linux distributions.
 
 ### Windows
 
@@ -126,7 +122,7 @@ the compiled firmware (see next section for required hardware):
 
 ### Installing firmware over USB via DFU-Mode (for PureThermal 2 & PureThermal Mini boards)
 
-Make sure you use at least 1.1.0 becuase earlier versions didn't support the PT1 and PT2 board from the same binary. 
+Make sure you use at least 1.1.0 because earlier versions didn't support the PT1 and PT2 board from the same binary.
 
 If you're not compiling from source you can download the firmware from [https://github.com/groupgets/purethermal1-firmware/releases](https://github.com/groupgets/purethermal1-firmware/releases) and substitute the .bin file in the tgz for main.bin in the commands below.
 
@@ -145,11 +141,11 @@ Install dfu-util:
 
     sudo apt-get install dfu-util
 
-or 
+or
 
     brew install dfu-util
 
-or your system's package manager. 
+or your system's package manager.
 
 Then run:
 
@@ -160,7 +156,7 @@ if you get an error "Invalid DFU suffix signature"
 run
 
     dfu-util --list
-    
+
 You should see a list of DFU devices in or connected to your computer, such as the example below:
 
     Found Runtime: [05ac:8290] ver=0161, devnum=2, cfg=1, intf=5, path="20-3", alt=0, name="UNKNOWN", serial="UNKNOWN"
@@ -169,9 +165,9 @@ You should see a list of DFU devices in or connected to your computer, such as t
     Found DFU: [0483:df11] ver=2200, devnum=4, cfg=1, intf=0, path="20-1", alt=1, name="@Option Bytes  /0x1FFFC000/01*016 e", serial="3061B4493536"
     Found DFU: [0483:df11] ver=2200, devnum=4, cfg=1, intf=0, path="20-1", alt=0, name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg", serial="3061B4493536"
 
-If you are a large number of devices you can unplug the PureThermal board and run the dfu-util --list command again and compare the output.
+If you have a large number of devices you can unplug the PureThermal board and run the dfu-util --list command again and compare the output.
 
-To specify a specific device to flash run (replace the ?? with the device id of the PureThermal board plugged into your comptuter)
+To specify a specific device to flash run (replace the ?? with the device id of the PureThermal board plugged into your computer)
 
     dfu-util -a 0 -d ????:???? -D main.bin -s 0x08000000
 
